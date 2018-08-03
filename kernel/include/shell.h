@@ -1,6 +1,8 @@
 #ifndef _MONITOR_SHELL_H
 #define _MONITOR_SHELL_H
 
+#define SH_OP_P 0x0050 // Ping
+
 #define SH_OP_R 0x0052              // char 'R'
 #define SH_OP_D 0x0044              // char 'D'
 #define SH_OP_A 0x0041              // char 'A'

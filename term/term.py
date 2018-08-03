@@ -26,7 +26,8 @@ except:
 if platform.system()=='Windows':
     CCPREFIX = "mips-mti-elf-"
 else:
-    CCPREFIX = 'mipsel-linux-gnu-'
+    CCPREFIX = "mips-sde-elf-"
+    # CCPREFIX = 'mipsel-linux-gnu-'
 
 Reg_alias = ['zero', 'AT', 'v0', 'v1', 'a0', 'a1', 'a2', 'a3', 't0', 't1', 't2', 't3', 't4', 't5', 't6', 't7', 's0', 
                 's1', 's2', 's3', 's4', 's5', 's6', 's7', 't8', 't9/jp', 'k0', 'k1', 'gp', 'sp', 'fp/s8', 'ra']
@@ -186,27 +187,19 @@ def run_U(addr, num):
 def run_G(addr):
     outp.write('G')
     outp.write(int_to_byte_string(addr))
-    class TrapError(Exception):
-        pass
-    try:
+    ret = inp.read(1)
+    if ret != '\x06':
+        print("start mark should be 0x06")
+    time_start = timer()
+    while True:
         ret = inp.read(1)
-        if ret == '\x80':
-            raise TrapError()
-        if ret != '\x06':
-            print("start mark should be 0x06")
-        time_start = timer()
-        while True:
-            ret = inp.read(1)
-            if ret == '\x07':
-                break
-            elif ret == '\x80':
-                raise TrapError()
-            sys.stdout.write(ret)
-        print('') #just a new line
-        elapse = timer() - time_start
-        print('elapsed time: %.3fs' % (elapse))
-    except TrapError:
-        print('supervisor reported an exception during execution')
+        if ret == '\x07':
+            break
+        sys.stdout.write(ret)
+    print('') #just a new line
+    elapse = timer() - time_start
+    print('elapsed time: %.3fs' % (elapse))
+
 
 
 def MainLoop():
@@ -243,9 +236,9 @@ def MainLoop():
         except ValueError, e:
             print(e)
 
-def InitializeSerial(pipe_path, baudrate):
+def InitializeSerial(pipe_path):
     global outp, inp
-    tty = serial.Serial(port=pipe_path, baudrate=baudrate)
+    tty = serial.Serial(port=pipe_path, baudrate=115200)
     tty.reset_input_buffer()
     inp = tty
     outp = tty
@@ -334,8 +327,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Term for mips32 expirence.')
     parser.add_argument('-c', '--continued', action='store_true', help='Term will not wait for welcome if this flag is set')
     parser.add_argument('-t', '--tcp', default=None, help='TCP server address:port for communication')
-    parser.add_argument('-s', '--serial', default=None, help='Serial port name (e.g. /dev/ttyACM0, COM3)')
-    parser.add_argument('-b', '--baud', default=9600, help='Serial port baudrate (9600 by default)')
+    parser.add_argument('-s', '--serial', default=None, help='Serial port name')
     args = parser.parse_args()
 
     if args.tcp:
@@ -343,11 +335,11 @@ if __name__ == "__main__":
             print 'Failed to establish TCP connection'
             exit(1)
     elif args.serial:
-        if not InitializeSerial(args.serial, args.baud):
+        if not InitializeSerial(args.serial):
             print 'Failed to open serial port'
             exit(1)
     else:
-        parser.print_help()
+        print 'Please specify communication method'
         exit(1)
     Main(not args.continued)
 

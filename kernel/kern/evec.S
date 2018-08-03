@@ -8,15 +8,18 @@
     .p2align 2
     .section .text.init
 INITLOCATE:                         // 定位启动程序
-    lui k0, %hi(START)
-    ori k0, %lo(START)
+//    lui k0, %hi(START)
+//    ori k0, %lo(START)
+	la k0, START
     jr k0
     nop
 
     .section .text.ebase180
+.global EHANDLERLOCATE
 EHANDLERLOCATE:                     // 定位普通中断处理程序
-    lui k0, %hi(EXCEPTIONHANDLER)
-    ori k0, %lo(EXCEPTIONHANDLER)
+//    lui k0, %hi(EXCEPTIONHANDLER)
+//    ori k0, %lo(EXCEPTIONHANDLER)
+	la k0, EXCEPTIONHANDLER
     jr k0
     nop
 

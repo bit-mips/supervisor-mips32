@@ -18,6 +18,16 @@ EXCEPTIONHANDLER:
 RETURNFRMTRAP:
 WAKEUPSHELL:
 SYSCALL:
+1:
+    lui t0, %hi(SerialData)
+    ori t1, zero, 120
+    sb t1, %lo(SerialData)(t0)
+    lui t1, 0xffff
+2:
+    bne t1, zero, 2b
+    addiu t1, t1, 1
+    b 1b
+    nop
     b   FATAL                       // 不支持异常时，这些入口都不应该进入，如果进入就永远等待，用于调试
     nop
 #else
@@ -27,8 +37,9 @@ FATAL:
     ori a0, zero, 0x80              // 错误信号
     jal WRITESERIAL                 // 发送
     nop
-    lui v0, %hi(START)              // 重启地址
-    ori v0, v0, %lo(START)
+//    lui v0, %hi(START)              // 重启地址
+//    ori v0, v0, %lo(START)
+	la v0, START
     jr v0
     nop
 
@@ -97,6 +108,10 @@ EXCEPTIONHANDLER:
     j FATAL                         // 无法处理的中断，出现严重错误
     nop
 
+CLEARUARTINT:
+	la t1, UARTBASE
+	lb t1, 8(t1)
+	jr ra
 
 RETURNFRMTRAP:
     lw k0, TF_STATUS(sp)
@@ -107,9 +122,9 @@ RETURNFRMTRAP:
     mtc0 k0, CP0_STATUS
     mtc0 k1, CP0_EPC
     lw k1, TF_CAUSE(sp)
-    xori k0, k1, 0xFF00
-    and k1, k1, k0                  // 清除IP位不要错误引发中断
-    mtc0 k1, CP0_CAUSE
+//    xori k0, k1, 0xFF00
+//    and k1, k1, k0                  // 清除IP位不要错误引发中断 IP7..IP2 are read-only
+//    mtc0 k1, CP0_CAUSE
     lw AT, TF_AT(sp)                // 从中断帧中恢复k0,k1以外寄存器，上下文
     lw v0, TF_v0(sp)
     lw v1, TF_v1(sp)
@@ -146,6 +161,7 @@ RETURNFRMTRAP:
 
 
 WAKEUPSHELL:
+	jal CLEARUARTINT
     lui t1, %hi(current)
     lw t1, %lo(current)(t1)         // 取得当前线程TCB地址
     lui t0, %hi(TCBT)

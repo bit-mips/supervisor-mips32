@@ -24,9 +24,17 @@ uregs:
      *  用户程序入口临时存储：0x807F0078
      */
 SHELL:
+//	jal WRITESERIAL
+//	ori a0, zero, 62 // '>'
     jal READSERIAL                  // 读操作符
     nop
+//	or s0, t0, zero
+//	jal WRITESERIAL
+//	or a0, t0, zero
 
+	ori t0, zero, SH_OP_P
+	beq v0, t0, .OP_P
+	nop
     ori t0, zero, SH_OP_R
     beq v0, t0, .OP_R
     nop
@@ -44,6 +52,12 @@ SHELL:
     nop
     j .DONE                         // 错误的操作符，默认忽略
     nop
+
+.OP_P: // Ping
+	jal WRITESERIAL
+	ori a0, zero, 0x50
+	j .DONE
+	nop
 
 .OP_T:                              // 操作 - 打印TLB项
     jal READSERIALWORD              // 取num(index)
@@ -181,8 +195,9 @@ SHELL:
     or k0, v0, zero
 #endif
 
-    lui ra, %hi(uregs)              // 定位用户空间寄存器备份地址
-    ori ra, ra, %lo(uregs)
+//    lui ra, %hi(uregs)              // 定位用户空间寄存器备份地址
+//    ori ra, ra, %lo(uregs)
+	la ra, uregs
     sw v0, PUTREG(31)(ra)           // 保存用户程序入口
     sw sp, PUTREG(32)(ra)           // 保存栈指针
 
@@ -217,8 +232,9 @@ SHELL:
     lw $29, PUTREG(29)(ra)
     lw $30, PUTREG(30)(ra)
 
-    lui ra, %hi(.USERRET2)          // ra写入返回地址
-    ori ra, ra, %lo(.USERRET2)
+//    lui ra, %hi(.USERRET2)          // ra写入返回地址
+//    ori ra, ra, %lo(.USERRET2)
+	la ra, .USERRET2
     nop
 #ifdef ENABLE_INT
     eret                            // 进入用户程序
@@ -229,9 +245,9 @@ SHELL:
 .USERRET2:
     nop
 
-    lui ra, %hi(uregs)              // 定位用户空间寄存器备份地址
-    ori ra, ra, %lo(uregs)
-
+//    lui ra, %hi(uregs)              // 定位用户空间寄存器备份地址
+//    ori ra, ra, %lo(uregs)
+	la ra, uregs
     sw $1,  PUTREG(1)(ra)           // 备份$1-$30
     sw $2,  PUTREG(2)(ra)
     sw $3,  PUTREG(3)(ra)

@@ -3,8 +3,10 @@ OUTPUT("kernel.elf")
 OUTPUT_ARCH("mips:isa32r2")
 OUTPUT_FORMAT("elf32-tradlittlemips")
 
-PROVIDE(SerialData = 0xBFD003F8);
-PROVIDE(SerialStat = 0xBFD003FC);
+PROVIDE(UARTBASE = 0x10000000);
+
+PROVIDE(SerialData = 0xBFD03000);
+PROVIDE(SerialStat = 0xBFD03014);
 
 /* Qemu serial constants */
 PROVIDE(COM1 = 0xBFD003F8);
@@ -22,11 +24,11 @@ PROVIDE(COM_MCR = COM1 + 4);
 PROVIDE(COM_IER = COM1 + 1);
 PROVIDE(COM_IER_RDI = 0x01);
 
-PROVIDE(KERNEL_STACK_INIT = 0x80800000);
-PROVIDE(USER_STACK_INIT = 0x807F0000);
+PROVIDE(KERNEL_STACK_INIT = 0x0000F000);
+PROVIDE(USER_STACK_INIT = 0x00008000);
 SECTIONS
 {
-    . = 0x807F0000;
+    . = 0x0000c000;
     .bss : {
         _sbss = .;         /* define a global symbol at bss start */
         *(.bss.uregs)
@@ -40,15 +42,15 @@ SECTIONS
     }
     PROVIDE(uregs_sp = uregs + (29 - 1) * 4);
     PROVIDE(uregs_fp = uregs + (30 - 1) * 4);
-    . = 0x80000000;
+    . = 0xbfc00000;
     .text.init : {
         KEEP (*(.text.init))
     }
-    . = 0x80001000;
+    . = 0xbfc01000;
     .text.ebase : {
         KEEP (*(.text.ebase))
     }
-    . = 0x80001180;
+    . = 0xbfc01180;
     .text.ebase180 : {
         KEEP (*(.text.ebase180))
     }

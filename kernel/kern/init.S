@@ -47,10 +47,12 @@ monitor_version:
     .word   _ebss
     .global START
 START:                              // kernel init
-    lui k0, %hi(_sbss)
-    ori k0, %lo(_sbss)
-    lui k1, %hi(_ebss)
-    ori k1, %lo(_ebss)
+//    lui k0, %hi(_sbss)
+//    ori k0, %lo(_sbss)
+	la k0, _sbss
+//    lui k1, %hi(_ebss)
+//    ori k1, %lo(_ebss)
+	la k1, _ebss
 bss_init:
     beq k0, k1, bss_init_done
     nop
@@ -75,7 +77,8 @@ bss_init_done:
     xor t1, t0, t1
     and t0, t0, t1                  // status Reg 的BEV位置零
     mtc0 t0, CP0_STATUS             // 中断处理转为正常模式
-    ori t2, zero, PAGE_SIZE
+.global EHANDLERLOCATE
+	la t2, EHANDLERLOCATE
     mtc0 t2, CP0_EBASE              // 设定中断响应基址为0x8000.1000
     mfc0 t0, CP0_CAUSE
     lui t1, %hi(CAUSEF_IV)
@@ -83,11 +86,13 @@ bss_init_done:
     and t0, t0, t1                  // Cause IV位置零
     mtc0 t0, CP0_CAUSE              // 关闭中断特殊入口
 #endif
-    lui sp, %hi(KERNEL_STACK_INIT)  // 设置内核栈
-    ori sp, sp, %lo(KERNEL_STACK_INIT)
+	la sp, KERNEL_STACK_INIT
+//    lui sp, %hi(KERNEL_STACK_INIT)  // 设置内核栈
+//    ori sp, sp, %lo(KERNEL_STACK_INIT)
     or fp, sp, zero
-    lui t0, %hi(USER_STACK_INIT)    // 设置用户栈
-    ori t0, t0, %lo(USER_STACK_INIT)
+//    lui t0, %hi(USER_STACK_INIT)    // 设置用户栈
+//    ori t0, t0, %lo(USER_STACK_INIT)
+	la t0, USER_STACK_INIT
     lui t1, %hi(uregs_sp)           // 写入用户空间备份
     sw t0, %lo(uregs_sp)(t1)
     lui t1, %hi(uregs_fp)
@@ -111,9 +116,7 @@ bss_init_done:
     ori t1, zero, %lo(COM_IER_RDI)
     sb t1, %lo(COM_IER)(t0)         // :67
 #else
-    lui t0, %hi(SerialStat)
-    ori t1, zero, 0x10
-    sb t1, %lo(SerialStat)(t0)      // 串口可读中断
+  
 #endif
 
 #ifdef ENABLE_INT
@@ -131,8 +134,9 @@ bss_init_done:
     sw zero, 0(sp)                  // 初始化栈空间
     bne t0, zero, .LC0              // 初始化循环
     nop
-    lui t0, %hi(TCBT)
-    ori t0, t0, %lo(TCBT)           // 载入TCBT地址
+//    lui t0, %hi(TCBT)
+//    ori t0, t0, %lo(TCBT)           // 载入TCBT地址
+	la t0, TCBT
     sw sp, 0(t0)                    // thread0(idle)的中断帧地址设置
 #ifdef ENABLE_INT
     mfc0 t1, CP0_STATUS             // 取STATUS
@@ -140,8 +144,9 @@ bss_init_done:
     ori t1, t1, ST0_IE              // 使能中断
     sw t2, TF_CAUSE(sp)             // 写中断帧CAUSE
     sw t1, TF_STATUS(sp)            // 写中断帧STATUS; idle线程打开串口硬件中断响应
-    lui t3, %hi(IDLELOOP)
-    ori t3, t3, %lo(IDLELOOP)       // 取得idle线程入口
+//    lui t3, %hi(IDLELOOP)
+//    ori t3, t3, %lo(IDLELOOP)       // 取得idle线程入口
+	la t3, IDLELOOP
     sw t3, TF_EPC(sp)               // 写中断帧EPC
 #endif
     or t6, sp, zero                 // t6保存idle中断帧位置
@@ -153,13 +158,15 @@ bss_init_done:
     sw zero, 0(sp)                  // 初始化栈空间
     bne t0, zero, .LC1              // 初始化循环
     nop
-    lui t0, %hi(TCBT)
-    ori t0, t0, %lo(TCBT)           // 载入TCBT地址
+//    lui t0, %hi(TCBT)
+//    ori t0, t0, %lo(TCBT)           // 载入TCBT地址
+	la t0, TCBT
     sw sp, 4(t0)                    // thread1(shell/user)的中断帧地址设置
     sw sp, TF_sp(t6)                // 设置idle线程栈指针(调试用?)
 
-    lui t2, %hi(TCBT + 4)
-    ori t2, t2, %lo(TCBT + 4)
+//    lui t2, %hi(TCBT + 4)
+//    ori t2, t2, %lo(TCBT + 4)
+	la t2, TCBT + 4
     lw t2, 0(t2)                    // 取得thread1的TCB地址
     lui t1, %hi(current)
     sw t2, %lo(current)(t1)         // 设置当前线程为thread1
@@ -199,10 +206,12 @@ bss_init_done:
     bne t3, zero, .LC_tlb
     nop
 
-    lui a0, %hi(PTECODE)            // 填页表1
-    ori a0, a0, %lo(PTECODE)
-    lui t0, %hi(PRAM0UBASE)
-    ori t0, t0, %lo(PRAM0UBASE)     // 物理地址
+//    lui a0, %hi(PTECODE)            // 填页表1
+//    ori a0, a0, %lo(PTECODE)
+	la a0, PTECODE
+//    lui t0, %hi(PRAM0UBASE)
+//    ori t0, t0, %lo(PRAM0UBASE)     // 物理地址
+	la t0, PRAM0UBASE
     srl t0, t0, 6                   // pa(12)->pfn(6)
     ori t0, t0, (ELO_VALIDF | ELO_DIRTYF | ELO_GLOBALF)
                                     // 可访问可写
@@ -215,10 +224,12 @@ bss_init_done:
     bne t6, zero, .LC_pte1
     nop
 
-    lui a0, %hi(PTESTACK)           // 填页表2
-    ori a0, a0, %lo(PTESTACK)
-    lui t0, %hi(PRAM1BASE)
-    ori t0, t0, %lo(PRAM1BASE)      // 物理地址
+//    lui a0, %hi(PTESTACK)           // 填页表2
+//    ori a0, a0, %lo(PTESTACK)
+	la a0, PTESTACK
+//    lui t0, %hi(PRAM1BASE)
+//    ori t0, t0, %lo(PRAM1BASE)      // 物理地址
+	la t0, PRAM1BASE
     srl t0, t0, 6                   // pa(12)->pfn(6)
     ori t0, t0, (ELO_VALIDF | ELO_DIRTYF | ELO_GLOBALF)
                                     // 可访问可写
@@ -237,23 +248,26 @@ bss_init_done:
     lui s2, 0x1FFF
     ori s2, s2, 0xFFFF              // kseg0 掩码
     mtc0 zero, CP0_INDEX            // 取TLB第一项
-    lui a0, %hi(PTECODE)            // kseg2页表page0
-    ori a0, a0, %lo(PTECODE)
+//    lui a0, %hi(PTECODE)            // kseg2页表page0
+//    ori a0, a0, %lo(PTECODE)
+	la a0, PTECODE
     and a0, a0, s2                  // 取物理地址
     srl a0, a0, 6                   // PA[35..12] => ENTRYLO{0,1}[29..6]
     ori a0, a0, ELO_VALIDF | ELO_GLOBALF    // 置合法位，不允许修改kseg2
     addiu a1, a0, PAGE_SIZE >> 6    // page1
     mtc0 a0, CP0_ENTRYLO0
     mtc0 a1, CP0_ENTRYLO1
-    lui t0, %hi(KSEG2PAGE0)         // kseg2第一二页
-    ori t0, t0, %lo(KSEG2PAGE0)
+//    lui t0, %hi(KSEG2PAGE0)         // kseg2第一二页
+//    ori t0, t0, %lo(KSEG2PAGE0)
+	la t0, KSEG2PAGE0
     mtc0 t0, CP0_ENTRYHI            // kseg2第一页翻译为ptecode
     nop
     tlbwi
     ori t0, zero, 0x1               // 2
     mtc0 t0, CP0_INDEX              // 取TLB第二项
-    lui a0, %hi(PTE2BASE)           // kseg2页表page1022
-    ori a0, a0, %lo(PTE2BASE)
+//    lui a0, %hi(PTE2BASE)           // kseg2页表page1022
+//    ori a0, a0, %lo(PTE2BASE)
+	la a0, PTE2BASE
     and a0, a0, s2                  // 取物理地址
     srl a0, a0, 6                   // PA[35..12] => ENTRYLO{0,1}[29..6]
     ori a0, a0, ELO_VALIDF | ELO_GLOBALF    // 置合法位，不允许修改kseg2
@@ -284,8 +298,9 @@ bss_init_done:
 
 
 WELCOME:
-    lui s0, %hi(monitor_version)    // 装入启动信息
-    ori s0, s0, %lo(monitor_version)
+//    lui s0, %hi(monitor_version)    // 装入启动信息
+//    ori s0, s0, %lo(monitor_version)
+	la s0, monitor_version
     lb a0, 0(s0)
 .Loop0:
     addiu s0, s0, 0x1
